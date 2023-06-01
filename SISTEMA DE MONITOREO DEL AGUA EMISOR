@@ -1,0 +1,50 @@
+#include <SPI.h>
+#include <LoRa.h>  
+#include "DHT.h"
+#define DHTPIN 4
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);                           
+const int Trigger = 13;   //Pin digital 2 para el Trigger del sensor
+const int Echo = 12;   //Pin digital 3 para el echo del sensor
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  pinMode(Trigger, OUTPUT); //pin como salida
+  pinMode(Echo, INPUT);  //pin como entrada
+  digitalWrite(Trigger, LOW);//Inicializamos el pin con 0
+  Serial.println("LORA enviado");
+  LoRa.setPins(17,16,22);                     // NSS, RESET y DIO0.
+  if (!LoRa.begin(915E6)) {                   // Frecuencia de la banda libre ISM en Europa. (868MHz) Si hay algun fallo de conexiones muestra el error.
+  Serial.println("Starting LoRa failed!");
+  while (1);
+  
+  }
+
+}
+void loop() {
+    long t; //timepo que demora en llegar el eco
+    long d; //distancia en centimetros
+    int awa;
+      digitalWrite(Trigger, HIGH);
+      delayMicroseconds(10);          //Enviamos un pulso de 10us
+      digitalWrite(Trigger, LOW);
+      t = pulseIn(Echo, HIGH); //obtenemos el ancho del pulso
+      d = t/59;             //escalamos el tiempo a una distancia en cm
+      awa = 19-d;
+      int h = dht.readHumidity();
+      int tem = dht.readTemperature();
+
+  
+  //enviando paquete
+  LoRa.beginPacket();
+  LoRa.write(awa);
+  LoRa.write(h);
+  LoRa.write(tem);
+  Serial.println(awa);
+  Serial.println(h);
+  Serial.println(tem);
+  LoRa.endPacket(); 
+   
+  delay(1000);
+}
